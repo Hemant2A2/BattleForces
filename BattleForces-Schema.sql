@@ -11,7 +11,7 @@ DROP TABLE IF EXISTS `Users`;
 
 
 CREATE TABLE `Users`(
-    `CodeForces Handle` VARCHAR(255) PRIMARY KEY,
+    `CodeForces_handle` VARCHAR(255) PRIMARY KEY,
     `Password` VARCHAR(255) NOT NULL
 );
 
@@ -21,7 +21,7 @@ CREATE TABLE `User_Profile`(
     `Wins` INT DEFAULT 0,
     `Rating` INT NOT NULL,
     `In_Contest` BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY(`Username`) REFERENCES `Users`(`CodeForces Handle`)
+    FOREIGN KEY(`Username`) REFERENCES `Users`(`CodeForces_handle`)
 );
 
 CREATE TABLE `Contests`(
@@ -30,7 +30,7 @@ CREATE TABLE `Contests`(
     `Is_Active` BOOLEAN DEFAULT TRUE,
     `Is_Public` BOOLEAN DEFAULT TRUE,
     `Duration` INT NOT NULL,
-    `Start time` TIMESTAMP NOT NULL,
+    `Start_time` TIMESTAMP NOT NULL,
     `Creator` VARCHAR(255) NOT NULL,
     `Number_of_Problems` INT NOT NULL,
     FOREIGN KEY(`Creator`) REFERENCES `User_Profile`(`Username`)
