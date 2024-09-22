@@ -49,6 +49,15 @@ CREATE TABLE `Participants`(
     FOREIGN KEY(`User3`) REFERENCES `User_Profile`(`Username`)
 );
 
+CREATE TABLE `Invites`(
+    `contest_id` INT,
+    `from` VARCHAR(255) NOT NULL,
+    `to` VARCHAR(255) NOT NULL,
+    FOREIGN KEY(`contest_id`) REFERENCES `Contests`(`contest_id`),
+    FOREIGN KEY(`from`) REFERENCES `User_Profile`(`Username`),
+    FOREIGN KEY(`to`) REFERENCES `User_Profile`(`Username`)
+);
+
 CREATE TABLE `Problems`(
     `contest_id` INT,
     `Problem_Name` VARCHAR(255) NOT NULL,
