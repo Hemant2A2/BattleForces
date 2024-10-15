@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
+import '../styles/VerifyHandle.css';
 
 const ProblemPage = () => {
   const [problem, setProblem] = useState(null);
@@ -36,7 +37,7 @@ const ProblemPage = () => {
         }
     } catch (error) {
         sessionStorage.setItem('verified', false);
-        console.error('Error during solution verification:', error);  // Log the error
+        console.error('Error during solution verification:', error); 
         if (error.response) {
             alert(error.response.data.error || 'something went wrong(in if)');
         } else {
@@ -47,11 +48,11 @@ const ProblemPage = () => {
   };
 
   return (
-    <div>
-      <h1>Solve this problem within 5 minutes:</h1>
-      {problem && <a href={problem.problem_url} target="_blank">Solve Problem</a>}
-      <button onClick={verifySolution}>Verify Solution</button>
-    </div>
+    <form onClick={verifySolution} className='verify-container'>
+      <h1>Submit a code to this problem which gives verdict "COMPILATION ERROR"</h1>
+      {problem && <a href={problem.problem_url} target="_blank">Problem</a>}
+      <button className='verify-button'>Verify Solution</button>
+    </form>
   );
 };
 

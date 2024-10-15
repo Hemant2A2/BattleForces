@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../api";
 import { useNavigate } from "react-router-dom";
+import "../styles/SubmitHandle.css";
 
 const SubmitHandle = () => {
 
@@ -19,7 +20,7 @@ const SubmitHandle = () => {
             }
         }
         catch (error) {
-            console.error('Error during submitting', error);  // Log the error
+            console.error('Error during submitting', error);  
             if (error.response) {
                 alert(error.response.data.error || 'something went wrong(in if)');
             } else {
@@ -30,16 +31,17 @@ const SubmitHandle = () => {
     };
 
   return (
-    <div>
-    <h1>Submit Your Codeforces Handle</h1>
+    <form onSubmit={submitHandle} className="submit-handle-container">
+    <h1>Enter Your Codeforces Handle</h1>
     <input 
+      className="submit-handle-input"
       type="text" 
       placeholder="Codeforces Handle" 
       value={handle} 
       onChange={(e) => setHandle(e.target.value)} 
     />
-    <button onClick={submitHandle}>Submit</button>
-    </div>
+    <button className="submit-handle-button">Submit</button>
+    </form>
   )
 }
 
