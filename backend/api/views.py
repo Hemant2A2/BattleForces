@@ -1,14 +1,16 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 import requests
 from .models import Users
 from .serializers import UsersSerializer
 from datetime import datetime, timedelta
 from django.contrib.auth.hashers import make_password
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
-class SubmitHandleView(APIView):
+class SubmitHandleView(generics.CreateAPIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         handle = request.data.get('handle')
         user, created = Users.objects.get_or_create(username=handle)
@@ -21,7 +23,8 @@ class SubmitHandleView(APIView):
             return Response({"error": "Handle is already verified."}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"handle": handle}, status=status.HTTP_200_OK)
 
-class GenerateVerificationProblemView(APIView):
+class GenerateVerificationProblemView(generics.CreateAPIView):
+    permission_classes = [AllowAny]
     def get(self, request):
         problem_id = "4/A"
         problem = {
@@ -32,7 +35,8 @@ class GenerateVerificationProblemView(APIView):
         #request.session['start_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return Response(problem)
 
-class VerifySolutionView(APIView):
+class VerifySolutionView(generics.CreateAPIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         handle = request.data.get('handle')
         problem_id = request.data.get('problem_id')
@@ -67,7 +71,8 @@ class VerifySolutionView(APIView):
         return Response({"error": "Verification failed!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CreatePasswordView(APIView):
+class CreatePasswordView(generics.CreateAPIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         cf_handle = request.data.get('handle')
         verified = request.data.get('verified')

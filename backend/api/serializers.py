@@ -5,3 +5,6 @@ class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
         fields = ['username', 'codeforces_handle', 'password', 'is_verified']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
