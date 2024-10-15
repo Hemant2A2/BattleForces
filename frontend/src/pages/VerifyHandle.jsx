@@ -48,11 +48,11 @@ const ProblemPage = () => {
   };
 
   return (
-    <form onClick={verifySolution} className='verify-container'>
+    <div className='verify-container'>
       <h1>Submit a code to this problem which gives verdict "COMPILATION ERROR"</h1>
       {problem && <a href={problem.problem_url} target="_blank">Problem</a>}
-      <button className='verify-button'>Verify Solution</button>
-    </form>
+      <button onClick={verifySolution} className='verify-button'>Verify Solution</button>
+    </div>
   );
 };
 
