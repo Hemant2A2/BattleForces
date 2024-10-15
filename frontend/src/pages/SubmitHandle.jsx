@@ -14,15 +14,16 @@ const SubmitHandle = () => {
             const res = await api.post('/api/submit-handle/', {handle});
             if(res.status === 200) {
                 sessionStorage.setItem('handle', handle);
-                navigate('/problem-page');
+                //alert(res.data.message);
+                navigate('/verify-handle');
             }
         }
         catch (error) {
             console.error('Error during submitting', error);  // Log the error
             if (error.response) {
-                alert(error.response.data.error || 'something went wrong');
+                alert(error.response.data.error || 'something went wrong(in if)');
             } else {
-                alert('An error occurred while submitting the handle.');
+                alert('An error(in else) occurred while submitting the handle.');
             }
         }
 

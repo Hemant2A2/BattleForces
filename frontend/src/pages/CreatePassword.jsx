@@ -10,10 +10,14 @@ const CreatePassword = () => {
   const submitPassword  = async (e) => {
     e.preventDefault();
 
+    const verified = sessionStorage.getItem('verified');
+    const handle = sessionStorage.getItem('handle');
+    console.log(verified);
+
     try {
-        const res = await api.post('/api/create-password/', { password });
+        const res = await api.post('/api/create-password/', { handle, verified, password });
         alert(res.data.message);
-        navigate('/');
+        navigate('/login');
     } catch (error) {
         console.error('Error during password creation', error);  // Log the error
         if (error.response) {
