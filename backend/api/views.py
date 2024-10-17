@@ -1,14 +1,22 @@
-from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 import requests
-from .models import Users
-from .serializers import UsersSerializer
+from .models import Users, UserProfile
+from .serializers import *
 from datetime import datetime, timedelta
 from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+# Custom TokenObtainPairView and TokenRefreshView
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+class CustomTokenRefreshView(TokenRefreshView):
+    serializer_class = CustomTokenRefreshSerializer
+
+# views related to user registration and verification
 class SubmitHandleView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     def post(self, request):
@@ -70,7 +78,6 @@ class VerifySolutionView(generics.CreateAPIView):
         #     del request.session['verified_user']
         return Response({"error": "Verification failed!"}, status=status.HTTP_400_BAD_REQUEST)
 
-
 class CreatePasswordView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     def post(self, request):
@@ -101,3 +108,50 @@ class CreatePasswordView(generics.CreateAPIView):
             "message": "Password created successfully! You can now log in.",
             "user": serialized_user.data  
         })
+
+#views related to user profile
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, username=None):
+        if username:
+            # Look for the user profile by username provided in the URL parameter
+            try:
+                user = Users.objects.get(username=username)
+            except:
+                return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            # Default to the current authenticated user if no username is provided
+            user = request.user
+
+        try:
+            profile = UserProfile.objects.get(user=user)
+        except:
+            profile = UserProfile.objects.create(user=user)
+
+        
+        api_url = f"https://codeforces.com/api/user.rating?handle={user.username}"
+        response = requests.get(api_url).json()
+
+        if response['status'] == 'OK':
+            profile.rating = response['result'][-1]['newRating']
+            profile.save(update_fields=['rating'])
+
+        return Response({
+            #"image": profile.image,
+            "rating": profile.rating,
+            "wins": profile.wins,
+            "joined": profile.joined,
+            "in_contest": profile.in_contest
+        })
+
+    def put(self, request):
+        user = request.user
+        profile = UserProfile.objects.get(user=user)
+        # Ensure that only the owner of the profile can update it
+        if profile.user != user:
+            return Response({"error": "You can only update your own profile."}, status=status.HTTP_403_FORBIDDEN)
+        image = request.FILES.get('image')
+        if image:
+            profile.image = image
+            profile.save(update_fields=['image'])
+            return Response({"message": "Profile pic updated successfully."}, status=status.HTTP_200_OK)

@@ -14,7 +14,7 @@ const CommonNavbar = (props) => {
         ))}
       </div>
       <div className="flex items-center">
-        <span className="text-gray-300 text-sm">{props.username}</span>
+        <span className="text-gray-300 text-sm">{props.loggedInUser}</span>
         <button className="bg-red-600 hover:bg-red-700 text-white ml-4 px-4 py-2 rounded-lg transition duration-200 ease-in-out">
           Logout
         </button>

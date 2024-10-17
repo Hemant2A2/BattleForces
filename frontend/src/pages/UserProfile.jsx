@@ -1,50 +1,21 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import CommonNavbar from "../components/CommonNavbar";
+import Profile from "../components/Profile";
+import { jwtDecode } from "jwt-decode";
+import { ACCESS_TOKEN } from "../constants";
 
 const UserProfile = () => {
   const { username } = useParams();
+  const token = localStorage.getItem(ACCESS_TOKEN);
+  const decoded = jwtDecode(token);
+  const loggedInUser = decoded.username;
   return (
     <div>
-      <CommonNavbar username={username} />
-      <Profile username={username} />
+      <CommonNavbar loggedInUser={loggedInUser} />
+      <Profile username={username} loggedInUser={loggedInUser} />
       <RecentContests />
       <FindUser />
-    </div>
-  );
-};
-
-const Profile = (props) => {
-  return (
-    <div className="bg-gray-100 p-6 rounded-lg shadow-md">
-      <h1 className="text-3xl font-bold text-gray-900">{props.username}</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        {/* Circular Image Box */}
-        <div className="border border-gray-500 p-4 flex items-center justify-center rounded-full h-64 w-64 mx-auto md:mx-0">
-          <img
-            src="/default_user.png" 
-            alt="Image"
-            className="object-cover w-full h-full" 
-          />
-        </div>
-
-        {/* Info Section */}
-        <div className="md:col-span-2 border border-gray-600 p-6 rounded-lg">
-          {[
-            { label: "Joined:", value: "5 days ago" },
-            { label: "Wins:", value: "0" },
-            { label: "Rating:", value: "2000" },
-          ].map(({ label, value }) => (
-            <p key={label} className="text-gray-600 mb-2">
-              {label} <strong className="text-gray-900">{value}</strong>
-            </p>
-          ))}
-
-          <button className="bg-blue-600 hover:bg-blue-700 text-white mt-4 px-4 py-2 rounded-md transition duration-200 ease-in-out">
-            Check Invites
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
