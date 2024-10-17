@@ -8,6 +8,9 @@ import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import UserProfile from "./pages/UserProfile";
+import CreateContest from "./pages/CreateContest";
+import CommonNavbar from "./components/CommonNavbar";
+
 
 function Logout() {
   localStorage.clear();
@@ -17,6 +20,7 @@ function Logout() {
 function App() {
   return (
     <BrowserRouter>
+      <CommonNavbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/submit-handle" element={<SubmitHandle />} />
@@ -30,6 +34,14 @@ function App() {
           element={
             <ProtectedRoute>
               <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-contest"
+          element={
+            <ProtectedRoute>
+              <CreateContest />
             </ProtectedRoute>
           }
         />

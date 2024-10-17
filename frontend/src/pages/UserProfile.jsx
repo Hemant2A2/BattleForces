@@ -1,6 +1,5 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import CommonNavbar from "../components/CommonNavbar";
 import Profile from "../components/Profile";
 import { jwtDecode } from "jwt-decode";
 import { ACCESS_TOKEN } from "../constants";
@@ -10,9 +9,9 @@ const UserProfile = () => {
   const token = localStorage.getItem(ACCESS_TOKEN);
   const decoded = jwtDecode(token);
   const loggedInUser = decoded.username;
+  
   return (
     <div>
-      <CommonNavbar loggedInUser={loggedInUser} />
       <Profile username={username} loggedInUser={loggedInUser} />
       <RecentContests />
       <FindUser />
