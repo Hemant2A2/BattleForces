@@ -72,7 +72,7 @@ const Profile = (props) => {
         {/* Circular Image Box */}
         <div className="border border-gray-500 p-4 flex items-center justify-center rounded-full h-64 w-64 mx-auto md:mx-0">
           <img
-            src="/default_user.png"
+            src={`${import.meta.env.VITE_API_URL}${profileData.image}`}
             alt="Image"
             className="object-cover w-half h-half"
           />

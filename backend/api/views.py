@@ -138,7 +138,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             profile.save(update_fields=['rating'])
 
         return Response({
-            #"image": profile.image.url,
+            "image": profile.image.url,
             "rating": profile.rating,
             "wins": profile.wins,
             "joined": profile.joined,
@@ -164,38 +164,47 @@ class CreateContestView(generics.CreateAPIView):
         user = request.user
         profile = UserProfile.objects.get(user=user)
 
-        if profile.in_contest:
-            return Response({"error": "You are already in a contest."}, status=status.HTTP_400_BAD_REQUEST)
+        # if profile.in_contest:
+        #     return Response({"error": "You are already in a contest."}, status=status.HTTP_400_BAD_REQUEST)
         
-        contest_name = request.data.get('contest_name')
+        number_of_problems = request.data.get('numberOfProblems')
         duration = request.data.get('duration')
-        number_of_problems = request.data.get('number_of_problems')
-        is_public = request.data.get('is_public')
+        contest_name = request.data.get('contestName')
+        is_public = request.data.get('publicContest')
+        min_rating = request.data.get('minRating')
+        max_rating = request.data.get('maxRating')
 
-        Contests.objects.create(
-            contest_name=contest_name,
-            duration=duration,
-            number_of_problems=number_of_problems,
-            creator=profile.user.username,
-            is_public=is_public,
-            is_active=True
-        )
+        try:
+            contest = Contests.objects.create(
+                contest_name=contest_name,
+                duration=duration,
+                number_of_problems=number_of_problems,
+                creator=user,
+                is_public=is_public,
+                is_active=True,
+                min_rating=min_rating,
+                max_rating=max_rating
+            )
+        except:
+            return Response({"error": "Error in creating the contest."}, status=status.HTTP_400_BAD_REQUEST)
 
-        profile.in_contest = True
-        profile.save(update_fields=['in_contest'])
-        return Response({"message": "Contest created successfully."}, status=status.HTTP_200_OK)
+        # profile.in_contest = True
+        # profile.save(update_fields=['in_contest'])
+        contest_id = contest.contest_id
+        return Response({"contest_id": {contest_id}}, status=status.HTTP_200_OK)
     
-
 class GenerateContestProblemsView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
-    def get(self, request, min_rating=800, max_rating=3500):
+    def get(self, request):
         user = request.user
         profile = UserProfile.objects.get(user=user)
 
         if not profile.in_contest:
             return Response({"error": "You need to join the contest first"}, status=status.HTTP_400_BAD_REQUEST)
         
-        contest = Contests.objects.get(creator=profile.user.username)
+        contest = Contests.objects.get(creator=profile.user)
+        min_rating = contest.min_rating
+        max_rating = contest.max_rating
         problems = []
         n = contest.number_of_problems
         i = 1

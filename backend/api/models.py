@@ -25,9 +25,11 @@ class Contests(models.Model):
     is_active = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
     duration = models.IntegerField()  # in hours
-    start_time = models.DateTimeField()
-    creator = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='created_contests')
+    start_time = models.DateTimeField(default=None, null=True, blank=True)
+    creator = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='created_contests')
     number_of_problems = models.IntegerField()
+    min_rating = models.IntegerField(default=800)
+    max_rating = models.IntegerField(default=3500)
 
     def __str__(self):
         return self.contest_id
@@ -58,7 +60,7 @@ class Participants(models.Model):
     def __str__(self):
         return self.user1.codeforces_handle
     
-    
+
 class Invites(models.Model):
     contest_id = models.ForeignKey(Contests, on_delete=models.CASCADE)
     from_user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='sent_invites')
