@@ -10,6 +10,9 @@ import Login from "./pages/Login";
 import UserProfile from "./pages/UserProfile";
 import CreateContest from "./pages/CreateContest";
 import CommonNavbar from "./components/CommonNavbar";
+import Participants from "./pages/Participants";
+import Problems from "./pages/Problems";
+import Standings from "./pages/Standings";
 
 
 function Logout() {
@@ -42,6 +45,30 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateContest />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contests/:contestId/participants"
+          element={
+            <ProtectedRoute>
+              <Participants />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contests/:contestId/problems"
+          element={
+            <ProtectedRoute>
+              <Problems/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contests/:contestId/standings"
+          element={
+            <ProtectedRoute>
+              <Standings />
             </ProtectedRoute>
           }
         />

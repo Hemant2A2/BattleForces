@@ -9,5 +9,5 @@ urlpatterns = [
     path('view-profile/<str:username>/', UserProfileView.as_view(), name='view_profile'),
     path('update-profile/', UserProfileView.as_view(), name='update_profile'),
     path('create-contest/', CreateContestView.as_view(), name='create_contest'),
-    path('contest/get-problems/<int:contest_id>', GenerateContestProblemsView.as_view(), name='generate_contest_problems'),
+    path('contest/problems/<int:contest_id>', GenerateContestProblemsView.as_view(), name='generate_contest_problems'),
 ] 

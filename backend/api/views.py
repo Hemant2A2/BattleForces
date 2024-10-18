@@ -195,14 +195,14 @@ class CreateContestView(generics.CreateAPIView):
     
 class GenerateContestProblemsView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
-    def get(self, request):
+    def post(self, request, contest_id):
         user = request.user
         profile = UserProfile.objects.get(user=user)
 
-        if not profile.in_contest:
-            return Response({"error": "You need to join the contest first"}, status=status.HTTP_400_BAD_REQUEST)
+        # if not profile.in_contest:
+        #     return Response({"error": "You need to join the contest first"}, status=status.HTTP_400_BAD_REQUEST)
         
-        contest = Contests.objects.get(creator=profile.user)
+        contest = Contests.objects.get(contest_id=contest_id)
         min_rating = contest.min_rating
         max_rating = contest.max_rating
         problems = []
@@ -230,8 +230,25 @@ class GenerateContestProblemsView(generics.CreateAPIView):
         
         for p in problems:
             Problems.objects.create(
-                contest_id=contest.contest_id,
+                contest_id=contest,
                 problem_name=p['problem_name'],
                 problem_link=p['problem_url']
             )
+        return Response({"message": "Problems generated successfully"}, status=status.HTTP_200_OK)
+    
+    def get(self, request, contest_id):
+        user = request.user
+
+        # if the requested user is the participants table with the given contest_id return the problems otherwise throw error
+        # todo
+
+        p = Problems.objects.filter(contest_id_id=contest_id)
+        problems = []
+
+        for problem in p:
+            problems.append({
+                "problem_name": problem.problem_name,
+                "problem_link": problem.problem_link
+            })
+
         return Response(problems)

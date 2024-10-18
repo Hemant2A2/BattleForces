@@ -29,6 +29,7 @@ const CreateContest = () => {
       if (res.status === 200) {
         alert("Contest created successfully");
         let contest_id = res.data.contest_id;
+        localStorage.setItem("contest_id", contest_id);
         navigate(`/contests/${contest_id}/participants`);
       }
     } catch (error) {
