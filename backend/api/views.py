@@ -1,13 +1,14 @@
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 import requests
-from .models import Users, UserProfile
+import random
+from .models import *
 from .serializers import *
 from datetime import datetime, timedelta
 from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .problemGenerator import getRandomProblemByRating
 
 # Custom TokenObtainPairView and TokenRefreshView
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -137,7 +138,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             profile.save(update_fields=['rating'])
 
         return Response({
-            #"image": profile.image,
+            #"image": profile.image.url,
             "rating": profile.rating,
             "wins": profile.wins,
             "joined": profile.joined,
@@ -155,3 +156,73 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             profile.image = image
             profile.save(update_fields=['image'])
             return Response({"message": "Profile pic updated successfully."}, status=status.HTTP_200_OK)
+        
+# views related to contests
+class CreateContestView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        user = request.user
+        profile = UserProfile.objects.get(user=user)
+
+        if profile.in_contest:
+            return Response({"error": "You are already in a contest."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        contest_name = request.data.get('contest_name')
+        duration = request.data.get('duration')
+        number_of_problems = request.data.get('number_of_problems')
+        is_public = request.data.get('is_public')
+
+        Contests.objects.create(
+            contest_name=contest_name,
+            duration=duration,
+            number_of_problems=number_of_problems,
+            creator=profile.user.username,
+            is_public=is_public,
+            is_active=True
+        )
+
+        profile.in_contest = True
+        profile.save(update_fields=['in_contest'])
+        return Response({"message": "Contest created successfully."}, status=status.HTTP_200_OK)
+    
+
+class GenerateContestProblemsView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, min_rating=800, max_rating=3500):
+        user = request.user
+        profile = UserProfile.objects.get(user=user)
+
+        if not profile.in_contest:
+            return Response({"error": "You need to join the contest first"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        contest = Contests.objects.get(creator=profile.user.username)
+        problems = []
+        n = contest.number_of_problems
+        i = 1
+        it = 1
+
+        while i <= n:
+            random_rating = random.choice(range(min_rating, max_rating + 1, 100))
+            problem = getRandomProblemByRating(random_rating)
+            if problem['status'] == 'Error':
+                it += 1
+                continue
+            problems.append({
+                "problem_name": chr(64 + i),
+                "problem_url": problem['url']
+            })
+            i += 1
+            it += 1
+            if it > 100:
+                break
+
+        if len(problems) < n:
+            return Response({"error": "Not enough problems found. Please try again."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        for p in problems:
+            Problems.objects.create(
+                contest_id=contest.contest_id,
+                problem_name=p['problem_name'],
+                problem_link=p['problem_url']
+            )
+        return Response(problems)
