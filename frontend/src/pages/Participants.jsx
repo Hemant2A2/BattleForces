@@ -71,7 +71,7 @@ const StartContestButton = () => {
         }
     } catch (error) {
         if (error.response) {
-            alert(error.response.data.error || 'something went wrong(in if)');
+            alert(error.response.data.error || 'something went wrong(in participants if)');
         } else {
             alert('An error(in else) occurred while generating problems');
         }

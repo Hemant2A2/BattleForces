@@ -11,6 +11,7 @@ const CreateContest = () => {
   const [publicContest, setPublicContest] = useState(true);
   const [minRating, setMinRating] = useState(800);
   const [maxRating, setMaxRating] = useState(3500);
+  const [teamName, setTeamName] = useState("");
 
   const navigate = useNavigate();
 
@@ -25,6 +26,7 @@ const CreateContest = () => {
         publicContest,
         minRating,
         maxRating,
+        teamName
       });
       if (res.status === 200) {
         alert("Contest created successfully");
@@ -126,6 +128,14 @@ const CreateContest = () => {
               step={100}
             />
           </div>
+
+          <FormField
+            label="Team Name:"
+            type="text"
+            placeholder="Enter team name"
+            value={teamName}
+            onChange={(e) => setTeamName(e.target.value)}
+          />
 
           <button
             type="submit"

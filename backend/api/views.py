@@ -10,14 +10,16 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .problemGenerator import getRandomProblemByRating
 
-# Custom TokenObtainPairView and TokenRefreshView
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 class CustomTokenRefreshView(TokenRefreshView):
     serializer_class = CustomTokenRefreshSerializer
 
-# views related to user registration and verification
+
+
+
 class SubmitHandleView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     def post(self, request):
@@ -32,6 +34,7 @@ class SubmitHandleView(generics.CreateAPIView):
             return Response({"error": "Handle is already verified."}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"handle": handle}, status=status.HTTP_200_OK)
 
+# should be generics.RetrieveAPIView ?
 class GenerateVerificationProblemView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     def get(self, request):
@@ -110,7 +113,6 @@ class CreatePasswordView(generics.CreateAPIView):
             "user": serialized_user.data  
         })
 
-#views related to user profile
 class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, username=None):
@@ -143,7 +145,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             "wins": profile.wins,
             "joined": profile.joined,
             "in_contest": profile.in_contest
-        })
+        }, status=status.HTTP_200_OK)
 
     def put(self, request):
         user = request.user
@@ -157,7 +159,9 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             profile.save(update_fields=['image'])
             return Response({"message": "Profile pic updated successfully."}, status=status.HTTP_200_OK)
         
-# views related to contests
+
+
+
 class CreateContestView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
@@ -165,7 +169,7 @@ class CreateContestView(generics.CreateAPIView):
         profile = UserProfile.objects.get(user=user)
 
         # if profile.in_contest:
-        #     return Response({"error": "You are already in a contest."}, status=status.HTTP_400_BAD_REQUEST)
+        #     return Response({"error": "You are already in a contest dumbass."}, status=status.HTTP_400_BAD_REQUEST)
         
         number_of_problems = request.data.get('numberOfProblems')
         duration = request.data.get('duration')
@@ -173,6 +177,7 @@ class CreateContestView(generics.CreateAPIView):
         is_public = request.data.get('publicContest')
         min_rating = request.data.get('minRating')
         max_rating = request.data.get('maxRating')
+        team_name = request.data.get('teamName')
 
         try:
             contest = Contests.objects.create(
@@ -184,6 +189,12 @@ class CreateContestView(generics.CreateAPIView):
                 is_active=True,
                 min_rating=min_rating,
                 max_rating=max_rating
+            )
+
+            Participants.objects.create(
+                team_name=team_name,
+                contest=contest,
+                user1=profile
             )
         except:
             return Response({"error": "Error in creating the contest."}, status=status.HTTP_400_BAD_REQUEST)
@@ -200,7 +211,7 @@ class GenerateContestProblemsView(generics.CreateAPIView):
         profile = UserProfile.objects.get(user=user)
 
         # if not profile.in_contest:
-        #     return Response({"error": "You need to join the contest first"}, status=status.HTTP_400_BAD_REQUEST)
+        #     return Response({"error": "You need to join the contest first bitch"}, status=status.HTTP_400_BAD_REQUEST)
         
         contest = Contests.objects.get(contest_id=contest_id)
         min_rating = contest.min_rating
@@ -230,7 +241,7 @@ class GenerateContestProblemsView(generics.CreateAPIView):
         
         for p in problems:
             Problems.objects.create(
-                contest_id=contest,
+                contest=contest,
                 problem_name=p['problem_name'],
                 problem_link=p['problem_url']
             )
@@ -238,11 +249,20 @@ class GenerateContestProblemsView(generics.CreateAPIView):
     
     def get(self, request, contest_id):
         user = request.user
+        profile = UserProfile.objects.get(user=user)
+        contest = Contests.objects.get(contest_id=contest_id)
 
-        # if the requested user is the participants table with the given contest_id return the problems otherwise throw error
-        # todo
+        # if the requested user is in the participants table with the given contest_id 
+        # return the problems otherwise throw error
+        
+        # Can this be done in a single query?
+        user_contests = Participants.objects.filter(user1=profile)
+        is_participant = [True for c in user_contests if c.contest == contest]
 
-        p = Problems.objects.filter(contest_id_id=contest_id)
+        if not is_participant:
+            return Response({"error": "You are not a participant in this contest."}, status=status.HTTP_400_BAD_REQUEST)
+
+        p = Problems.objects.filter(contest=contest)
         problems = []
 
         for problem in p:
@@ -252,3 +272,16 @@ class GenerateContestProblemsView(generics.CreateAPIView):
             })
 
         return Response(problems)
+    
+
+
+class ParticipantsView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, contest_id):
+        pass
+
+    def put(self, request, contest_id):
+        pass
+
+    def delete(self, request, contest_id):
+        pass

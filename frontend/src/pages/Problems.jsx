@@ -38,7 +38,7 @@ const Problems = () => {
         }
       } catch (error) {
         if (error.response) {
-          alert(error.response.data.error || "something went wrong(in if)");
+          alert(error.response.data.error || "something went wrong(in problems if)");
         } else {
           alert("An error(in else) occurred while getting problems");
         }
