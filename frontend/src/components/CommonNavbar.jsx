@@ -32,6 +32,12 @@ const CommonNavbar = () => {
               if(text === "Create Contest") {
                 navigate("/create-contest");
               }
+              else if(text === "Join Contest") {
+                navigate("/join-contest");
+              }
+              else if(text === "Contest Given") {
+                navigate("/contests-given");
+              }
               }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 ease-in-out"
           >

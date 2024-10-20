@@ -13,6 +13,7 @@ import CommonNavbar from "./components/CommonNavbar";
 import Participants from "./pages/Participants";
 import Problems from "./pages/Problems";
 import Standings from "./pages/Standings";
+import JoinContest from "./pages/JoinContest";
 
 
 function Logout() {
@@ -69,6 +70,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Standings />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/join-contest"
+          element={
+            <ProtectedRoute>
+              <JoinContest />
             </ProtectedRoute>
           }
         />
