@@ -2,6 +2,7 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 import requests
 import random
+import string
 from .models import *
 from .serializers import *
 from datetime import datetime, timedelta
@@ -34,8 +35,7 @@ class SubmitHandleView(generics.CreateAPIView):
             return Response({"error": "Handle is already verified."}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"handle": handle}, status=status.HTTP_200_OK)
 
-# should be generics.RetrieveAPIView ?
-class GenerateVerificationProblemView(generics.CreateAPIView):
+class GenerateVerificationProblemView(generics.RetrieveAPIView):
     permission_classes = [AllowAny]
     def get(self, request):
         problem_id = "4/A"
@@ -179,6 +179,9 @@ class CreateContestView(generics.CreateAPIView):
         max_rating = request.data.get('maxRating')
         team_name = request.data.get('teamName')
 
+        characters = string.ascii_letters + string.digits + string.punctuation
+        room_id = ''.join(random.choice(characters) for _ in range(10))
+
         try:
             contest = Contests.objects.create(
                 contest_name=contest_name,
@@ -188,7 +191,8 @@ class CreateContestView(generics.CreateAPIView):
                 is_public=is_public,
                 is_active=True,
                 min_rating=min_rating,
-                max_rating=max_rating
+                max_rating=max_rating,
+                room_id=room_id
             )
 
             Participants.objects.create(
@@ -203,6 +207,32 @@ class CreateContestView(generics.CreateAPIView):
         # profile.save(update_fields=['in_contest'])
         contest_id = contest.contest_id
         return Response({"contest_id": {contest_id}}, status=status.HTTP_200_OK)
+    
+class JoinContestView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+       user = request.user
+       team_name = request.data.get('teamName')
+       received_room_id = request.data.get('roomId')
+       # check if the room_id exists in the contests table and that the contest is active
+       contest = Contests.objects.get(room_id=received_room_id)
+       if not contest:
+            return Response({"error": "Contest does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+       if not contest.is_active:
+            return Response({"error": "Contest is not active."}, status=status.HTTP_400_BAD_REQUEST)
+       # if it does add the user to the participants table
+       profile = UserProfile.objects.get(user=user)
+       Participants.objects.create(
+            team_name=team_name,
+            contest=contest,
+            user1=profile
+       )
+       return Response({"contest_id": contest.contest_id}, status=status.HTTP_200_OK)
+    
+class JoinContestAsTeamMateView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        pass
     
 class GenerateContestProblemsView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]

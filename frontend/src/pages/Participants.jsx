@@ -68,6 +68,8 @@ const StartContestButton = () => {
 const Participants = () => {
   const participants = ["User 1", "User 2", "User 3"];
 
+  // fetch the participants from the database
+
   return (
     <div className="bg-background text-foreground p-6 min-h-screen">
       <header className="mb-6">

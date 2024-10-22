@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import '../styles/CreatePassword.css';
+import '../index.css';
 
 const CreatePassword = () => {
   const [password, setPassword] = useState('');

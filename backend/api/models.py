@@ -32,6 +32,7 @@ class Contests(models.Model):
     number_of_problems = models.IntegerField()
     min_rating = models.IntegerField(default=800)
     max_rating = models.IntegerField(default=3500)
+    room_id = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return self.contest_id

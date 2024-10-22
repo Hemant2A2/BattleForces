@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Profile from "../components/Profile";
 import { jwtDecode } from "jwt-decode";
@@ -6,16 +6,23 @@ import { ACCESS_TOKEN } from "../constants";
 import api from "../api";
 
 const UserProfile = () => {
+  const [isOwner, setIsOwner] = useState(false);
   const { username } = useParams();
   const token = localStorage.getItem(ACCESS_TOKEN);
   const decoded = jwtDecode(token);
   const loggedInUser = decoded.username;
+
+  useEffect(() => {
+    if (loggedInUser === username) {
+      setIsOwner(true);
+    }
+  }, [loggedInUser, username]);
   
   return (
     <div>
       <Profile username={username} loggedInUser={loggedInUser} />
       <RecentContests />
-      <FindUser />
+      {isOwner && <FindUser />}
     </div>
   );
 };

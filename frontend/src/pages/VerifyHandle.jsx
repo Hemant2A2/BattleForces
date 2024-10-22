@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
-import '../styles/VerifyHandle.css';
+import '../index.css';
 
 const ProblemPage = () => {
   const [problem, setProblem] = useState(null);
@@ -43,6 +43,7 @@ const ProblemPage = () => {
         } else {
             alert('An error(in else) occurred while verifying the solution.');
         }
+        navigate('/submit-handle');
     }
 
   };

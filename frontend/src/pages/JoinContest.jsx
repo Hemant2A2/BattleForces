@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import api from "../api";
+import { useNavigate } from "react-router-dom";
 
-const COMMON_CLASSES = 'flex justify-between items-center';
-const BUTTON_CLASSES = 'p-2 rounded';
+const COMMON_CLASSES = "flex justify-between items-center";
+const BUTTON_CLASSES = "p-2 rounded";
 const PUBLIC_CONTESTS = [
   "contest 1",
   "contest 2",
@@ -18,7 +20,11 @@ const PUBLIC_CONTESTS = [
 const ContestItem = ({ contestName }) => (
   <li className={COMMON_CLASSES}>
     <span className="text-muted-foreground">{contestName}</span>
-    <button className={`bg-red-500 mb-4 text-secondary-foreground ${BUTTON_CLASSES}`}>Join</button>
+    <button
+      className={`bg-red-500 mb-4 text-secondary-foreground ${BUTTON_CLASSES}`}
+    >
+      Join
+    </button>
   </li>
 );
 
@@ -34,17 +40,42 @@ const PublicContests = () => (
 );
 
 const PrivateContests = () => {
-  const [roomId, setRoomId] = useState('');
+  const [roomId, setRoomId] = useState("");
+  const [teamName, setTeamName] = useState("");
+  const navigate = useNavigate();
 
-  const handleJoinClick = () => {
-    // Handle join logic here
-    console.log(`Joining room with ID: ${roomId}`);
+  const handleJoinClick = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post("/api/join-contest/", { teamName, roomId });
+      if (res.status === 200) {
+        const contestId = res.data.contest_id;
+        console.log(contestId);
+        navigate(`/contests/${contestId}/participants`);
+      }
+    } catch (error) {
+      if (error.response) {
+        alert(
+          error.response.data.error ||
+            "something went wrong(in join contest if)"
+        );
+      } else {
+        alert("An error(in else) occurred while joining contest");
+      }
+    }
   };
 
   return (
     <div className="bg-gray-200 w-full md:w-1/2 bg-muted rounded-lg p-6 space-y-4 flex flex-col h-auto md:min-h-[300px]">
       <h2 className="text-lg font-bold text-primary">Private Contests</h2>
       <h3 className="text-lg font-semibold text-primary">Join with Room ID</h3>
+      <input
+        type="text"
+        placeholder="Enter Team Name"
+        className="border-2 border-border p-2 w-full rounded"
+        value={teamName}
+        onChange={(e) => setTeamName(e.target.value)}
+      />
       <input
         type="text"
         placeholder="Enter Room ID"
