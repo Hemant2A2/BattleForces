@@ -39,7 +39,7 @@ class Contests(models.Model):
     
 
 class Problems(models.Model):
-    contest = models.ForeignKey(Contests, on_delete=models.CASCADE)
+    contest = models.ForeignKey('Contests', on_delete=models.CASCADE)
     problem_name = models.CharField(max_length=255) # A, B ,C ...
     problem_link = models.URLField()
 
@@ -52,7 +52,7 @@ class Problems(models.Model):
 
 class Participants(models.Model):
     team_name = models.CharField(max_length=255)
-    contest = models.ForeignKey(Contests, on_delete=models.CASCADE)
+    contest = models.ForeignKey('Contests', on_delete=models.CASCADE)
     user1 = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='team_member1')
     user2 = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='team_member2', null=True, blank=True)
     user3 = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='team_member3', null=True, blank=True)

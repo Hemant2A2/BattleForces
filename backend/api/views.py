@@ -9,7 +9,10 @@ from datetime import datetime, timedelta
 from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .problemGenerator import getRandomProblemByRating
+from .helper import getRandomProblemsByRating, getprob, check_solved
+from django.utils import timezone
+import pytz
+
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -136,7 +139,10 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         response = requests.get(api_url).json()
 
         if response['status'] == 'OK':
-            profile.rating = response['result'][-1]['newRating']
+            try :
+                profile.rating = response['result'][-1]['newRating']
+            except:
+                profile.rating = 0
             profile.save(update_fields=['rating'])
 
         return Response({
@@ -242,39 +248,65 @@ class GenerateContestProblemsView(generics.CreateAPIView):
 
         # if not profile.in_contest:
         #     return Response({"error": "You need to join the contest first bitch"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+        # extract username of all participants
+        participants = Participants.objects.all()
+        participant_usernames = []
+        for participant in participants:
+            if participant.user1:
+                profile = participant.user1
+                username = profile.user.username
+                participant_usernames.append(username)
+            if participant.user2:
+                profile = participant.user2
+                username = profile.user.username
+                participant_usernames.append(username)
+            if participant.user3:
+                profile = participant.user3
+                username = profile.user.username
+                participant_usernames.append(username)
+
         contest = Contests.objects.get(contest_id=contest_id)
+        timezone = pytz.timezone("UTC")
+        current_time = datetime.now(timezone)
+        contest.start_time = current_time
+        contest.save(update_fields=['start_time'])
         min_rating = contest.min_rating
         max_rating = contest.max_rating
-        problems = []
         n = contest.number_of_problems
-        i = 1
-        it = 1
-
-        while i <= n:
-            random_rating = random.choice(range(min_rating, max_rating + 1, 100))
-            problem = getRandomProblemByRating(random_rating)
-            if problem['status'] == 'Error':
-                it += 1
-                continue
+        
+        links = getRandomProblemsByRating(n, min_rating, max_rating, participant_usernames)
+        if links['status'] == 'Error':
+            return Response({"error": links['message']}, status=status.HTTP_400_BAD_REQUEST)
+        
+        problems = []
+        for i in range(len(links['url'])):
             problems.append({
-                "problem_name": chr(64 + i),
-                "problem_url": problem['url']
+                "problem_name": string.ascii_uppercase[i],
+                "problem_url": links['url'][i]
             })
-            i += 1
-            it += 1
-            if it > 100:
-                break
 
         if len(problems) < n:
             return Response({"error": "Not enough problems found. Please try again."}, status=status.HTTP_400_BAD_REQUEST)
         
+        team = Participants.objects.get(contest=contest, user1=profile)
+        Scoreboard.objects.create(
+            contest=contest,
+            team=team
+        )
+
         for p in problems:
             Problems.objects.create(
                 contest=contest,
                 problem_name=p['problem_name'],
                 problem_link=p['problem_url']
             )
+            Standings.objects.create(
+                contest=contest,
+                team=team,
+                problem_attempted=p['problem_name']
+            )
+
         return Response({"message": "Problems generated successfully"}, status=status.HTTP_200_OK)
     
     def get(self, request, contest_id):
@@ -305,13 +337,91 @@ class GenerateContestProblemsView(generics.CreateAPIView):
     
 
 
-class ParticipantsView(generics.RetrieveUpdateDestroyAPIView):
+# class ParticipantsView(generics.RetrieveUpdateDestroyAPIView):
+#     permission_classes = [IsAuthenticated]
+#     def get(self, request, contest_id):
+#         pass
+
+#     def put(self, request, contest_id):
+#         pass
+
+#     def delete(self, request, contest_id):
+#         pass
+
+
+class StandingsView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, contest_id):
-        pass
+        user = request.user
+        profile = UserProfile.objects.get(user=user)
+        contest = Contests.objects.get(contest_id=contest_id)
+        time_of_start = contest.start_time
+        url_list = (Problems.objects.filter(contest = contest))
+        ud = []
+        for i in url_list:
+            ud.append(i.problem_link)
+        url_list = ud
+        problem_data = getprob(url_list)
+        teams = Participants.objects.filter(contest = contest)
+        # add start_time as variable 
+        ret_obj = []
+        for i in teams:
 
-    def put(self, request, contest_id):
-        pass
+            users = [ i.user1.user.username ]
+            if(i.user2):
+                users.append(i.user2.user.username)
+            
+            if(i.user3):
+                users.append(i.user3.user.username) 
+            
+            penalty = 0
+            scored = 0
+            teamid = i.id 
+            sbd_obj = (Scoreboard.objects.filter(contest = contest , team = teamid))[0]
+            record = []
+            record.append(i.team_name)
+            for j in range(len(problem_data)):
+                ws , fact , tim = check_solved(users,problem_data[j])
+                print(ws,fact,tim)
+                c = string.ascii_uppercase[j]
+                stand_obj = (Standings.objects.filter(contest = contest, team = teamid, problem_attempted = c))[0]
+                if(fact):
+                    record.append(1)
+                    scored+=1
 
-    def delete(self, request, contest_id):
-        pass
+
+                    tim_delta = tim - time_of_start
+
+                    minutes = (tim_delta.total_seconds())/60
+                    penalty+= (10*ws + minutes)
+                    stand_obj.is_it_solved = True
+                    stand_obj.time_of_solve = tim
+                    stand_obj.attempts = ws
+                else :
+                    record.append(0)
+                    stand_obj.attempts = ws
+                    stand_obj.is_it_solved = False
+                stand_obj.save()
+            record.append(scored)
+            record.append(penalty)
+            ret_obj.append(record)
+            sbd_obj.penalty = penalty
+            sbd_obj.solve_count = scored
+            sbd_obj.save()
+        xo = len(problem_data) + 1
+        ret_obj.sort(key=lambda y:(y[xo],y[xo+1]))
+        robj = []
+        print(ret_obj)
+        for value in ret_obj:
+            team_name = value[0]
+            itm = {}
+            itm['team_name']= team_name
+            solutions =[]
+            for i in range(len(problem_data)):
+                solutions.append(value[i+1])
+            itm['solve_count'] = value[xo]
+            itm['penalty'] = value[xo+1]
+            itm['solutions'] = solutions
+            robj.append(itm)
+        print(robj)
+        return Response(robj)

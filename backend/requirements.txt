@@ -6,7 +6,9 @@ djangorestframework-simplejwt
 PyJWT
 pytz
 sqlparse
-psycopg2-binary
 python-dotenv
 mysql-connector-python
 Pillow
+channels
+channels_redis
+daphne

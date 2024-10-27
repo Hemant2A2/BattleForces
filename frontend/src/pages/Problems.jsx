@@ -31,6 +31,7 @@ const Problems = () => {
   useEffect(() => {
     const fetchProblems = async () => {
       const contest_id = localStorage.getItem("contest_id");
+      //const contest_id = 86;
       try {
         const res = await api.get(`/api/contest/problems/${contest_id}`);
         if (res.status === 200) {
