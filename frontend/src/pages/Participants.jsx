@@ -151,7 +151,23 @@ const Participants = () => {
   const handleTeamInvite = async (e) => {
     e.preventDefault();
 
-    
+    try {
+      console.log(teamMate);
+      const res = await api.post(`/api/invite-team-mate/`, {teamMate, contest_id});
+      if (res.status === 200) {
+        alert("Invite sent successfully");
+      }
+    } catch (error) {
+      if (error.response) {
+        alert(
+          error.response.data.error ||
+            "something went wrong(in add team_mate if)"
+        );
+      } else {
+        console.log(error);
+        alert("An error(in else) occurred while sending invite to team_mate");
+      }
+    }
   };
 
   return (

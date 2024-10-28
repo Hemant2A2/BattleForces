@@ -237,15 +237,75 @@ class JoinContestView(generics.CreateAPIView):
 class JoinContestAsTeamMateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
-        pass
+       user = request.user
+       team_name = request.data.get('teamName')
+       room_id = request.data.get('room_id')
+       contest = Contests.objects.filter(room_id=room_id)[0]
+       team = Participants.objects.filter(team_name=team_name, contest=contest)[0]
+       if team.user2:
+           team.user3 = UserProfile.objects.get(user=user)
+       else:
+            team.user2 = UserProfile.objects.get(user=user)
+
+       team.save()
+       return Response({"contest_id": contest.contest_id}, status=status.HTTP_200_OK)
+    
 
 class SendInviteToTeamMateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
-        pass
+        user = request.user
+        contest_id = request.data.get('contest_id')
+        sender_profile = UserProfile.objects.get(user=user)
+        receiver_username = request.data.get('teamMate')
+        receiver_profile = UserProfile.objects.get(user__username=receiver_username)
+        contest = Contests.objects.get(contest_id=contest_id)
+
+        try:
+            Invites.objects.create(
+                contest=contest,
+                from_user=sender_profile,
+                to_user=receiver_profile,
+                for_team=True
+            )
+        except:
+            return Response({"error": "Error in sending invite."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({"message": "Invite sent successfully."}, status=status.HTTP_200_OK)
+
     
     def get(self, request):
-        pass
+        user = request.user
+        profile = UserProfile.objects.get(user=user)
+        invites = Invites.objects.filter(to_user=profile, for_team=True)
+
+
+        messages = []
+        room_id = []
+        team_name = ""
+        for i in invites:
+            room_id.append(Contests.objects.get(contest_id=i.contest_id).room_id)
+            messages.append({
+                "message": f"You have been invited to contest {i.contest_id} by {i.from_user.user.username}: "
+            })
+            teams = Participants.objects.filter(user1=i.from_user)
+            for team in teams:
+                if team:
+                    team_name = team.team_name
+                else:
+                    team = Participants.objects.filter(user2=i.from_user)
+                    if team:
+                        team_name = team.team_name
+                    else:
+                        team = Participants.objects.filter(user3=i.from_user)
+                        if team:
+                            team_name = team.team_name
+        
+        return Response({
+            "messages": messages,
+            "team_name": team_name,
+            "room_id"  : room_id
+        }, status=status.HTTP_200_OK)
 
 class SendInviteToParticipant(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
