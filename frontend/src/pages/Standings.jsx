@@ -18,7 +18,7 @@ const Standings = () => {
   useEffect(() => {
     const fetchStandings = async () => {
       try {
-        const res = await api.get(`api/contest/standings/${contest_id}`);
+        const res = await api.put(`api/contest/standings/${contest_id}`);
         setStandingsData(res.data);
         console.log(res.data);
         let sols = res.data[0].solutions;

@@ -65,6 +65,7 @@ class Invites(models.Model):
     contest = models.ForeignKey(Contests, on_delete=models.CASCADE)
     from_user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='sent_invites')
     to_user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='received_invites')
+    for_team = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('contest', 'from_user', 'to_user')

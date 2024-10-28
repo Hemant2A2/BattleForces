@@ -14,6 +14,7 @@ import Participants from "./pages/Participants";
 import Problems from "./pages/Problems";
 import Standings from "./pages/Standings";
 import JoinContest from "./pages/JoinContest";
+import Invites from "./pages/Invites";
 
 
 function Logout() {
@@ -78,6 +79,14 @@ function App() {
           element={
             <ProtectedRoute>
               <JoinContest />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/userProfile/invites/:username"
+          element={
+            <ProtectedRoute>
+              <Invites />
             </ProtectedRoute>
           }
         />

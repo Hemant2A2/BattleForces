@@ -13,4 +13,6 @@ urlpatterns = [
     path('join-contest/', JoinContestView.as_view(), name='join_contest'),
     path('contest/standings/<int:contest_id>', StandingsView.as_view(), name='standings'),
     path('contest/participants/<int:contest_id>', ParticipantsView.as_view(), name='contest_participants'),
+    path('invite-participant/', SendInviteToParticipant.as_view(), name='invite_participant'),
+    path('invite-team-mate/', SendInviteToTeamMateView.as_view(), name='invite_team_mate'),
 ] 

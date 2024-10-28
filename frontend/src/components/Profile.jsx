@@ -33,7 +33,6 @@ const Profile = (props) => {
     fetchProfile();
   }, [props.username, props.loggedInUser]);
 
-
   const handleFileChange = (e) => {
     e.preventDefault();
     setSelectedFile(e.target.files[0]); // Set the selected file
@@ -42,16 +41,16 @@ const Profile = (props) => {
   const handleUpload = async () => {
     if (selectedFile) {
       const formData = new FormData();
-      formData.append('image', selectedFile);
+      formData.append("image", selectedFile);
 
       try {
-        const response = await api.put('/api/update-profile/', formData, {
+        const response = await api.put("/api/update-profile/", formData, {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
           },
         });
-        if(response.status === 403) {
-            navigate('/');
+        if (response.status === 403) {
+          navigate("/");
         }
         alert("Profile picture updated successfully!");
       } catch (error) {
@@ -59,6 +58,10 @@ const Profile = (props) => {
         alert("Failed to update profile picture.");
       }
     }
+  };
+
+  const checkInvites = () => {
+    navigate(`/userProfile/invites/${props.username}`);
   };
 
   if (loading) {
@@ -103,16 +106,24 @@ const Profile = (props) => {
             { label: "Joined:", value: profileData.joined },
             { label: "Wins:", value: profileData.wins },
             { label: "Codeforces_Rating:", value: profileData.rating },
-            { label: "In_Contest:", value: profileData.in_contest?"yes":"no" },
+            {
+              label: "In_Contest:",
+              value: profileData.in_contest ? "yes" : "no",
+            },
           ].map(({ label, value }) => (
             <p key={label} className="text-gray-600 mb-2">
               {label} <strong className="text-gray-900">{value}</strong>
             </p>
           ))}
 
-          <button className="bg-blue-600 hover:bg-blue-700 text-white mt-4 px-4 py-2 rounded-md transition duration-200 ease-in-out">
-            Check Invites
-          </button>
+          {isOwner && (
+            <button
+              onClick={checkInvites}
+              className="bg-blue-600 hover:bg-blue-700 text-white mt-4 px-4 py-2 rounded-md transition duration-200 ease-in-out"
+            >
+              Check Invites
+            </button>
+          )}
         </div>
       </div>
     </div>

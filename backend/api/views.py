@@ -5,12 +5,11 @@ import random
 import string
 from .models import *
 from .serializers import *
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .helper import getRandomProblemsByRating, getprob, check_solved
-from django.utils import timezone
 import pytz
 
 
@@ -239,7 +238,51 @@ class JoinContestAsTeamMateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
         pass
+
+class SendInviteToTeamMateView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        pass
     
+    def get(self, request):
+        pass
+
+class SendInviteToParticipant(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        user = request.user
+        contest_id = request.data.get('contest_id')
+        sender_profile = UserProfile.objects.get(user=user)
+        receiver_username = request.data.get('toUser')
+        receiver_profile = UserProfile.objects.get(user__username=receiver_username)
+        contest = Contests.objects.get(contest_id=contest_id)
+
+        try:
+            Invites.objects.create(
+                contest=contest,
+                from_user=sender_profile,
+                to_user=receiver_profile
+            )
+        except:
+            return Response({"error": "Error in sending invite."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({"message": "Invite sent successfully."}, status=status.HTTP_200_OK)
+
+    def get(self, request):
+        user = request.user
+        profile = UserProfile.objects.get(user=user)
+        invites = Invites.objects.filter(to_user=profile, for_team=False)
+        room_id = []
+        messages = []
+        for i in invites:
+            room_id.append(Contests.objects.get(contest_id=i.contest_id).room_id)
+            messages.append({
+                "message": f"You have been invited to contest {i.contest_id} by {i.from_user.user.username} with room_id: {room_id[-1]}"
+            })
+        
+        return Response(messages, status=status.HTTP_200_OK)
+        
+            
 class GenerateContestProblemsView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, contest_id):
@@ -311,12 +354,7 @@ class GenerateContestProblemsView(generics.CreateAPIView):
                 problem_name=p['problem_name'],
                 problem_link=p['problem_url']
             )
-            # Standings.objects.create(
-            #     contest=contest,
-            #     team=team,
-            #     problem_attempted=p['problem_name']
-            # )
-
+            
         return Response({"message": "Problems generated successfully"}, status=status.HTTP_200_OK)
     
     def get(self, request, contest_id):
@@ -408,9 +446,9 @@ class ParticipantsView(generics.RetrieveUpdateDestroyAPIView):
 
 class StandingsView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
-    def get(self, request, contest_id):
+    def put(self, request, contest_id):
         user = request.user
-        profile = UserProfile.objects.get(user=user)
+        # profile = UserProfile.objects.get(user=user)
         contest = Contests.objects.get(contest_id=contest_id)
         time_of_start = contest.start_time
         url_list = (Problems.objects.filter(contest = contest))

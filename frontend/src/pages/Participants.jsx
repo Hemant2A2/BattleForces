@@ -9,11 +9,27 @@ const TEXT_HEADING = "text-xl font-semibold mb-2";
 const BUTTON_CLASSES = "px-4 py-2 rounded";
 const SECTION_MARGIN_BOTTOM = "mb-8";
 
-const AddParticipantSection = () => {
+const AddParticipantSection = ({contest_id}) => {
   const [toUser, setToUser] = useState("");
 
   const handleParticipantInvite = async (e) => {
     e.preventDefault();
+
+    try {
+      const res = await api.post(`/api/invite-participant/`, {toUser, contest_id});
+      if (res.status === 200) {
+        alert("Invite sent successfully");
+      }
+    } catch (error) {
+      if (error.response) {
+        alert(
+          error.response.data.error ||
+            "something went wrong(in add participants if)"
+        );
+      } else {
+        alert("An error(in else) occurred while sending invite to participant");
+      }
+    }
 
   };
 
@@ -126,8 +142,7 @@ const Participants = () => {
       const navigate = useNavigate();
       navigate(`/contests/${contest_id}/problems`);
     }
-    //const navigate = useNavigate();
-    if ( hasStarted.current) {
+    if (hasStarted.current) {
       go();
     }
   },[hasStarted]);
@@ -194,7 +209,7 @@ const Participants = () => {
         </div>
       </section>
 
-      {isCreator && <AddParticipantSection />}
+      {isCreator && <AddParticipantSection contest_id={contest_id} />}
       {isCreator && (
         <StartContestButton contest_id={contest_id} />
       )}
