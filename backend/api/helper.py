@@ -1,8 +1,6 @@
 import requests
 import random
-import json
 from datetime import datetime
-from django.utils import timezone
 import pytz
 
 def getAllSolved(participants):
@@ -60,11 +58,8 @@ def getRandomProblemsByRating(num, min_rating, max_rating, participants):
     
 def getprob(url_list):
     problem_list = []
-    print(url_list)
     for link in url_list:
-        print(link)
         link = link.split('/')
-        print(link)
         contest_id = int(link[4])
         index = link[6]
         item = { 'contest_id' : contest_id , 'index' : index}
@@ -89,7 +84,6 @@ def check_solved(users , problem):
                         unix_timestamp = int(p['creationTimeSeconds'])
                         timezone = pytz.timezone("UTC")
                         tim = datetime.fromtimestamp(unix_timestamp,timezone)
-                        print(tim)
                     else : 
                         ws+=1
     return ws , fact , tim

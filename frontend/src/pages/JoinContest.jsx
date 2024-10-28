@@ -50,7 +50,7 @@ const PrivateContests = () => {
       const res = await api.post("/api/join-contest/", { teamName, roomId });
       if (res.status === 200) {
         const contestId = res.data.contest_id;
-        console.log(contestId);
+       localStorage.setItem("contest_id", contestId);
         navigate(`/contests/${contestId}/participants`);
       }
     } catch (error) {

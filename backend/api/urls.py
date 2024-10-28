@@ -12,4 +12,5 @@ urlpatterns = [
     path('contest/problems/<int:contest_id>', GenerateContestProblemsView.as_view(), name='generate_contest_problems'),
     path('join-contest/', JoinContestView.as_view(), name='join_contest'),
     path('contest/standings/<int:contest_id>', StandingsView.as_view(), name='standings'),
+    path('contest/participants/<int:contest_id>', ParticipantsView.as_view(), name='contest_participants'),
 ] 

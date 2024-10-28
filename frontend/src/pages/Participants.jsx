@@ -9,18 +9,12 @@ const TEXT_HEADING = "text-xl font-semibold mb-2";
 const BUTTON_CLASSES = "px-4 py-2 rounded";
 const SECTION_MARGIN_BOTTOM = "mb-8";
 
-const AddParticipantSection = ({ socket }) => {
+const AddParticipantSection = () => {
   const [toUser, setToUser] = useState("");
 
   const handleParticipantInvite = async (e) => {
     e.preventDefault();
 
-    socket.current.send(
-      JSON.stringify({
-        type: "invite_participant",
-        receiver_username: toUser,
-      })
-    );
   };
 
   return (
@@ -54,19 +48,17 @@ const AddParticipantSection = ({ socket }) => {
   );
 };
 
-const StartContestButton = ({ socket, contest_id }) => {
+const StartContestButton = ({ contest_id }) => {
+  const navigate = useNavigate();
   const startContest = async (e) => {
     e.preventDefault();
 
     try {
       const res = await api.post(`/api/contest/problems/${contest_id}`);
       if (res.status === 200) {
-        //navigate(`/contests/${contest_id}/problems`);
-        socket.current.send(
-          JSON.stringify({
-            type: "contest_started",
-          })
-        );
+        // hasStarted.current = true;
+        // console.log(hasStarted.current);
+        navigate(`/contests/${contest_id}/problems`);
       }
     } catch (error) {
       if (error.response) {
@@ -91,139 +83,61 @@ const StartContestButton = ({ socket, contest_id }) => {
 
 const Participants = () => {
   const contest_id = localStorage.getItem("contest_id");
-  const navigate = useNavigate();
-
   const [team, setTeam] = useState(["User 1", "User 2", "User 3"]);
+  const [teamName, setTeamName] = useState("");
   const [otherParticipants, setOtherParticipants] = useState([]);
   const [isCreator, setIsCreator] = useState(false);
   const [teamMate, setTeamMate] = useState("");
 
-  const [rerender, setRerender] = useState(0);
-  const socket = useRef(null);
+  const hasStarted = useRef(false);
 
   const token = localStorage.getItem(ACCESS_TOKEN);
   const decoded = jwtDecode(token);
   const loggedInUser = decoded.username;
 
   useEffect(() => {
-    if (contest_id && !socket.current) {
-      socket.current = new WebSocket(
-        `${
-          import.meta.env.VITE_API_WS
-        }/ws/participants/${contest_id}/?token=${token}`
-      );
+    
+    const fetchParticipants = async () => {
+      try {
+        const res = await api.get(`api/contest/participants/${contest_id}`);
+        if (res.status === 200) {
+          const data = res.data;
+          setIsCreator(data.creator === loggedInUser);
+          setTeam(data.team);
+          setTeamName(data.team_name);
+          setOtherParticipants(data.other_participants);
+        }
+      } catch (error) {
+        if (error.response) {
+          alert(error.response.data.error || "something went wrong(in participants if)");
+        } else {
+          alert("An error(in else) occurred while getting participants");
+        }
+      }
+    };
 
-      socket.current.onopen = () => {
-        console.log("WebSocket connection opened:", socket.current);
-      };
+    fetchParticipants();
 
-      socket.current.onerror = (e) => {
-        console.log("WebSocket error:", e);
-      };
+  },[loggedInUser]);
 
-      socket.current.onclose = (e) => {
-        console.log("WebSocket connection closed", e);
-      };
-    }
-  }, [contest_id]);
 
   useEffect(() => {
-    console.log("socket message event listener");
-    if (socket.current) {
-      socket.current.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        console.log("WebSocket message received:", data); // Debugging output
-
-        if (data.type === "get_creator") {
-          if (data.creator === loggedInUser) {
-            setIsCreator(true);
-          }
-        }
-        if (data.type === "team_mate_invite_message") {
-          console.log("team_mate_invite_message");
-          if (
-            window.confirm(
-              `You have been invited to join ${data.sender}'s team`
-            )
-          ) {
-            const to_user = prompt("Enter your username:");
-            socket.current.send(
-              JSON.stringify({
-                type: "team_mate_invite_accepted",
-                receiver_username: to_user,
-              })
-            );
-            setRerender(rerender + 1);
-            navigate(`/contests/${contest_id}/participants`);
-          }
-        }
-        if (data.type === "participant_invite_message") {
-          if (
-            window.confirm(
-              `You have been invited to join ${data.sender}'s contest`
-            )
-          ) {
-            const to_user = prompt("Enter your username:");
-            const teamName = prompt("Enter your team name:");
-            socket.current.send(
-              JSON.stringify({
-                type: "participant_invite_accepted",
-                receiver_username: to_user,
-                teamName: teamName,
-              })
-            );
-            setRerender(rerender + 1);
-            navigate(`/contests/${contest_id}/participants`);
-          }
-        } 
-        if (data.type === "update_participants") {
-          //console.log("update_participants");
-          // Ensure data has expected properties
-          const teamName = data.team.team_name;
-          const participants = data.participants;
-        
-          let other = [];
-          participants.forEach((participant) => {
-            if (participant.team_name === teamName) {
-              setTeam([
-                participant.user1_username,
-                participant.user2_username,
-                participant.user3_username,
-              ]);
-            } else {
-              other.push(participant);
-            }
-          });
-          setOtherParticipants(other);
-        } 
-        if (data.type === "contest_started_message") {
-          navigate(`/contests/${contest_id}/problems`);
-        }
-      };
-
-      return () => {
-        if (socket.current) {
-          socket.current.onmessage = null;
-        }
-      };
+    const go = () => {
+      const navigate = useNavigate();
+      navigate(`/contests/${contest_id}/problems`);
     }
-  }, [socket, rerender]);
+    //const navigate = useNavigate();
+    if ( hasStarted.current) {
+      go();
+    }
+  },[hasStarted]);
 
+ 
   const handleTeamInvite = async (e) => {
     e.preventDefault();
 
-    console.log("sending invite to team mate");
-    socket.current.send(
-      JSON.stringify({
-        type: "invite_team_mate",
-        receiver_username: teamMate,
-      })
-    );
-    setRerender(rerender + 1);
+    
   };
-
-  //console.log(team);
-  // console.log(render);
 
   return (
     <div className="bg-background text-foreground p-6 min-h-screen">
@@ -233,7 +147,7 @@ const Participants = () => {
 
       {/* Team Section */}
       <section className={SECTION_MARGIN_BOTTOM}>
-        <h2 className={TEXT_HEADING}>Your Team Name</h2>
+        <h2 className={TEXT_HEADING}>{teamName}</h2>
         <input
           type="text"
           className="bg-secondary text-secondary-foreground p-2 w-full mb-2 rounded"
@@ -273,17 +187,16 @@ const Participants = () => {
           <ul className="list-decimal pl-5 space-y-2">
             {otherParticipants.map((team, index) => (
               <li key={index}>
-                {team.team_name} - {team.user1__username},{team.user2__username}
-                , {team.user3__username}
+                {team.team_name} - {team.user1}  {team.user2}  {team.user3}
               </li>
             ))}
           </ul>
         </div>
       </section>
 
-      {isCreator && <AddParticipantSection socket={socket} />}
+      {isCreator && <AddParticipantSection />}
       {isCreator && (
-        <StartContestButton socket={socket} contest_id={contest_id} />
+        <StartContestButton contest_id={contest_id} />
       )}
     </div>
   );

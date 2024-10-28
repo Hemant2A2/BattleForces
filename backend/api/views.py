@@ -289,11 +289,21 @@ class GenerateContestProblemsView(generics.CreateAPIView):
         if len(problems) < n:
             return Response({"error": "Not enough problems found. Please try again."}, status=status.HTTP_400_BAD_REQUEST)
         
-        team = Participants.objects.get(contest=contest, user1=profile)
-        Scoreboard.objects.create(
-            contest=contest,
-            team=team
-        )
+        for p in participants:
+            profile = p.user1
+            if profile:
+                team = Participants.objects.get(contest=contest, user1=profile)
+                Scoreboard.objects.create(
+                    contest=contest,
+                    team=team
+                )
+                for p in problems:
+                    Standings.objects.create(
+                        contest=contest,
+                        team=team,
+                        problem_attempted=p['problem_name']
+                    )
+       
 
         for p in problems:
             Problems.objects.create(
@@ -301,11 +311,11 @@ class GenerateContestProblemsView(generics.CreateAPIView):
                 problem_name=p['problem_name'],
                 problem_link=p['problem_url']
             )
-            Standings.objects.create(
-                contest=contest,
-                team=team,
-                problem_attempted=p['problem_name']
-            )
+            # Standings.objects.create(
+            #     contest=contest,
+            #     team=team,
+            #     problem_attempted=p['problem_name']
+            # )
 
         return Response({"message": "Problems generated successfully"}, status=status.HTTP_200_OK)
     
@@ -337,16 +347,63 @@ class GenerateContestProblemsView(generics.CreateAPIView):
     
 
 
-# class ParticipantsView(generics.RetrieveUpdateDestroyAPIView):
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request, contest_id):
-#         pass
+class ParticipantsView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, contest_id):
+        user = request.user
+        profile = UserProfile.objects.get(user=user)
+        contest = Contests.objects.get(contest_id=contest_id)
 
-#     def put(self, request, contest_id):
-#         pass
+        # filter the team of the user, this user can be either of user1 or user2 or user3
+        team = Participants.objects.filter(contest=contest, user1=profile)
+        if team :
+            pass
+        else :
+            team = Participants.objects.filter(contest=contest, user2=profile)
+            if team :
+                pass
+            else :
+                team = Participants.objects.filter(contest=contest, user3=profile)
+                if team :
+                    pass
+                else :
+                    return Response({"error": "You are not a participant in this contest."}, status=status.HTTP_400_BAD_REQUEST)
 
-#     def delete(self, request, contest_id):
-#         pass
+        teamData = []
+        team_name = team[0].team_name
+        for t in team:
+            teamData.append(t.user1.user.username)
+            if t.user2:
+                teamData.append(t.user2.user.username)
+            if t.user3:
+                teamData.append(t.user3.user.username)
+        
+        # fetch team details of all other paricipants in the contest
+        participants = Participants.objects.filter(contest=contest)
+        otherParticipantsData = []
+        for p in participants:
+            if p.team_name != team_name:
+                otherParticipantsData.append({
+                    "team_name": p.team_name,
+                    "user1": p.user1.user.username,
+                    "user2": p.user2.user.username if p.user2 else None,
+                    "user3": p.user3.user.username if p.user3 else None
+                })
+
+        creator = contest.creator.username
+
+        return Response({
+            "team_name": team_name,
+            "creator": creator,
+            "team": teamData,
+            "other_participants": otherParticipantsData
+        }, status=status.HTTP_200_OK)
+
+    # def put(self, request, contest_id):
+    #     pass
+
+    # def delete(self, request, contest_id):
+    #     pass
 
 
 class StandingsView(generics.RetrieveUpdateAPIView):
@@ -382,7 +439,6 @@ class StandingsView(generics.RetrieveUpdateAPIView):
             record.append(i.team_name)
             for j in range(len(problem_data)):
                 ws , fact , tim = check_solved(users,problem_data[j])
-                print(ws,fact,tim)
                 c = string.ascii_uppercase[j]
                 stand_obj = (Standings.objects.filter(contest = contest, team = teamid, problem_attempted = c))[0]
                 if(fact):
@@ -393,6 +449,7 @@ class StandingsView(generics.RetrieveUpdateAPIView):
                     tim_delta = tim - time_of_start
 
                     minutes = (tim_delta.total_seconds())/60
+                    minutes = (int)(minutes)
                     penalty+= (10*ws + minutes)
                     stand_obj.is_it_solved = True
                     stand_obj.time_of_solve = tim
@@ -409,9 +466,8 @@ class StandingsView(generics.RetrieveUpdateAPIView):
             sbd_obj.solve_count = scored
             sbd_obj.save()
         xo = len(problem_data) + 1
-        ret_obj.sort(key=lambda y:(y[xo],y[xo+1]))
+        ret_obj.sort(key=lambda y:(-y[xo],y[xo+1]))
         robj = []
-        print(ret_obj)
         for value in ret_obj:
             team_name = value[0]
             itm = {}
@@ -423,5 +479,4 @@ class StandingsView(generics.RetrieveUpdateAPIView):
             itm['penalty'] = value[xo+1]
             itm['solutions'] = solutions
             robj.append(itm)
-        print(robj)
         return Response(robj)
