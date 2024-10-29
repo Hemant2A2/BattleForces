@@ -12,6 +12,7 @@ const ProblemTableRow = ({ problem }) => (
         href={problem.problem_link}
         className="text-blue-500 underline"
         target="_blank"
+        rel="noopener noreferrer"
       >
         {problem.problem_link}
       </a>
@@ -20,39 +21,80 @@ const ProblemTableRow = ({ problem }) => (
 );
 
 const Problems = () => {
-  let default_problems = [
+  const default_problems = [
     { problem_name: "A", problem_link: "url1" },
     { problem_name: "B", problem_link: "url2" },
     { problem_name: "C", problem_link: "url3" },
   ];
 
   const [problems, setProblems] = useState(default_problems);
+  const [timeLeft, setTimeLeft] = useState(null);
 
   useEffect(() => {
-    const fetchProblems = async () => {
+    const fetchContestData = async () => {
       const contest_id = localStorage.getItem("contest_id");
-      //const contest_id = 86;
       try {
         const res = await api.get(`/api/contest/problems/${contest_id}`);
         if (res.status === 200) {
-          setProblems(res.data);
+          const { problems, start_time, duration } = res.data;
+          setProblems(problems);
+
+          const endTime = new Date(
+            new Date(start_time).getTime() + duration * 3600 * 1000
+          );
+
+          const updateCountdown = () => {
+            const now = new Date();
+            const difference = endTime - now;
+
+            if (difference > 0) {
+              const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+              const minutes = Math.floor((difference / (1000 * 60)) % 60);
+              const seconds = Math.floor((difference / 1000) % 60);
+              setTimeLeft({ hours, minutes, seconds });
+            } else {
+              setTimeLeft(null);
+            }
+          };
+
+          updateCountdown();
+          const timerId = setInterval(updateCountdown, 1000);
+
+          return () => clearInterval(timerId);
         }
       } catch (error) {
         if (error.response) {
-          alert(error.response.data.error || "something went wrong(in problems if)");
+          alert(
+            error.response.data.error ||
+              "An error occurred while fetching contest data."
+          );
         } else {
-          alert("An error(in else) occurred while getting problems");
+          alert("An error occurred while getting contest data.");
         }
       }
     };
 
-    fetchProblems();
+    fetchContestData();
   }, []);
 
   return (
     <div className="text-foreground p-6 rounded-lg shadow-md">
       <ContestNavbar />
-      <table className="min-w-full bg-card border-collapse">
+      {timeLeft ? (
+        <div className="bg-gray-100 text-center p-4 rounded-lg shadow-md">
+          <h2 className="text-xl font-bold mb-2">Time Left</h2>
+          <div className="text-lg font-mono">
+            {String(timeLeft.hours).padStart(2, "0")}:
+            {String(timeLeft.minutes).padStart(2, "0")}:
+            {String(timeLeft.seconds).padStart(2, "0")}
+          </div>
+        </div>
+      ) : (
+        <div className="text-red-500 font-semibold text-center mt-4">
+          Contest has ended.
+        </div>
+      )}
+      <table className="min-w-full bg-card border-collapse mb-4">
         <thead>
           <tr>
             <th className="text-left p-4 border-b border-border">

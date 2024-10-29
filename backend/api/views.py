@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .helper import getRandomProblemsByRating, getprob, check_solved
 import pytz
-
+from django.db.models import Q
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -45,8 +45,6 @@ class GenerateVerificationProblemView(generics.RetrieveAPIView):
             "id": problem_id,
             "problem_url": f"https://codeforces.com/problemset/problem/{problem_id}"
         }
-        #request.session['problem_id'] = problem_id
-        #request.session['start_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return Response(problem)
 
 class VerifySolutionView(generics.CreateAPIView):
@@ -54,34 +52,18 @@ class VerifySolutionView(generics.CreateAPIView):
     def post(self, request):
         handle = request.data.get('handle')
         problem_id = request.data.get('problem_id')
-        #start_time = request.session.get('start_time')
         
-        # # Check if time exceeds 5 minutes
-        # if datetime.now() > datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=5):
-        #     return Response({"error": "Time limit exceeded."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Call Codeforces API to check recent submissions by handle
         api_url = f"https://codeforces.com/api/user.status?handle={handle}&from=1&count=1"
         response = requests.get(api_url).json()
 
-        # latest_submission['verdict'] == "COMPILATION_ERROR"
-       
         if response['status'] == 'OK':
             latest_submission = response['result'][0]
-            # contest_id = latest_submission['problem']['contestId']
-            # index = latest_submission['problem']['index']
-            # latest_problem_id = f"{contest_id}/{index}" if contest_id and index else None
             if latest_submission['verdict'] == "COMPILATION_ERROR":
-                # user = get_object_or_404(Users, codeforces_handle=handle)
-                # user.is_verified = True
-                # user.save(update_fields=['is_verified']) 
                 return Response({"message": "Handle verified! Proceed to create a password."}, status=status.HTTP_200_OK)
         
         user = Users.objects.get(username=handle)
         if user:
             user.delete()
-        # if(request.session['verified_user']):
-        #     del request.session['verified_user']
         return Response({"error": "Verification failed!"}, status=status.HTTP_400_BAD_REQUEST)
 
 class CreatePasswordView(generics.CreateAPIView):
@@ -106,6 +88,7 @@ class CreatePasswordView(generics.CreateAPIView):
         user.password = make_password(password)  # Hash the password before saving
         user.save(update_fields=['password', 'is_verified', 'codeforces_handle'])
 
+        UserProfile.objects.create(user = user)
 
         # Use serializer to return the user's data
         serialized_user = UsersSerializer(user)
@@ -238,14 +221,15 @@ class JoinContestAsTeamMateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
        user = request.user
-       team_name = request.data.get('teamName')
+       profile = UserProfile.objects.get(user=user)
+       team_name = request.data.get('team_name')
        room_id = request.data.get('room_id')
        contest = Contests.objects.filter(room_id=room_id)[0]
        team = Participants.objects.filter(team_name=team_name, contest=contest)[0]
        if team.user2:
-           team.user3 = UserProfile.objects.get(user=user)
+           team.user3 = profile
        else:
-            team.user2 = UserProfile.objects.get(user=user)
+            team.user2 = profile
 
        team.save()
        return Response({"contest_id": contest.contest_id}, status=status.HTTP_200_OK)
@@ -282,24 +266,17 @@ class SendInviteToTeamMateView(generics.CreateAPIView):
 
         messages = []
         room_id = []
-        team_name = ""
+        team_name = []
         for i in invites:
             room_id.append(Contests.objects.get(contest_id=i.contest_id).room_id)
             messages.append({
                 "message": f"You have been invited to contest {i.contest_id} by {i.from_user.user.username}: "
             })
-            teams = Participants.objects.filter(user1=i.from_user)
+            teams = Participants.objects.filter(
+                Q(user1=i.from_user) | Q(user2=i.from_user) | Q(user3=i.from_user)
+            )
             for team in teams:
-                if team:
-                    team_name = team.team_name
-                else:
-                    team = Participants.objects.filter(user2=i.from_user)
-                    if team:
-                        team_name = team.team_name
-                    else:
-                        team = Participants.objects.filter(user3=i.from_user)
-                        if team:
-                            team_name = team.team_name
+                team_name.append(team.team_name)
         
         return Response({
             "messages": messages,
@@ -334,13 +311,18 @@ class SendInviteToParticipant(generics.CreateAPIView):
         invites = Invites.objects.filter(to_user=profile, for_team=False)
         room_id = []
         messages = []
+        r_id = []
         for i in invites:
             room_id.append(Contests.objects.get(contest_id=i.contest_id).room_id)
             messages.append({
-                "message": f"You have been invited to contest {i.contest_id} by {i.from_user.user.username} with room_id: {room_id[-1]}"
+                "message": f"You have been invited to contest {i.contest_id} by {i.from_user.user.username} with room_id: "
             })
+            r_id.append(room_id[-1])
         
-        return Response(messages, status=status.HTTP_200_OK)
+        return Response({
+            "messages": messages,
+            "room_id": r_id
+        }, status=status.HTTP_200_OK)
         
             
 class GenerateContestProblemsView(generics.CreateAPIView):
@@ -352,22 +334,14 @@ class GenerateContestProblemsView(generics.CreateAPIView):
         # if not profile.in_contest:
         #     return Response({"error": "You need to join the contest first bitch"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # extract username of all participants
+        # Extract usernames of all participants
         participants = Participants.objects.all()
-        participant_usernames = []
-        for participant in participants:
-            if participant.user1:
-                profile = participant.user1
-                username = profile.user.username
-                participant_usernames.append(username)
-            if participant.user2:
-                profile = participant.user2
-                username = profile.user.username
-                participant_usernames.append(username)
-            if participant.user3:
-                profile = participant.user3
-                username = profile.user.username
-                participant_usernames.append(username)
+        participant_usernames = [
+            user_profile.user.username
+            for participant in participants
+            for user_profile in [participant.user1, participant.user2, participant.user3]
+            if user_profile
+        ]
 
         contest = Contests.objects.get(contest_id=contest_id)
         timezone = pytz.timezone("UTC")
@@ -407,7 +381,6 @@ class GenerateContestProblemsView(generics.CreateAPIView):
                         problem_attempted=p['problem_name']
                     )
        
-
         for p in problems:
             Problems.objects.create(
                 contest=contest,
@@ -425,9 +398,9 @@ class GenerateContestProblemsView(generics.CreateAPIView):
         # if the requested user is in the participants table with the given contest_id 
         # return the problems otherwise throw error
         
-        # Can this be done in a single query?
-        user_contests = Participants.objects.filter(user1=profile)
-        is_participant = [True for c in user_contests if c.contest == contest]
+        is_participant = Participants.objects.filter(
+            Q(contest=contest) & (Q(user1=profile) | Q(user2=profile) | Q(user3=profile))
+        ).exists()
 
         if not is_participant:
             return Response({"error": "You are not a participant in this contest."}, status=status.HTTP_400_BAD_REQUEST)
@@ -441,7 +414,11 @@ class GenerateContestProblemsView(generics.CreateAPIView):
                 "problem_link": problem.problem_link
             })
 
-        return Response(problems)
+        return Response({
+            "problems": problems,
+            "start_time": contest.start_time,
+            "duration": contest.duration
+        }, status=status.HTTP_200_OK)
     
 
 
@@ -452,29 +429,26 @@ class ParticipantsView(generics.RetrieveUpdateDestroyAPIView):
         profile = UserProfile.objects.get(user=user)
         contest = Contests.objects.get(contest_id=contest_id)
 
-        # filter the team of the user, this user can be either of user1 or user2 or user3
-        team = Participants.objects.filter(contest=contest, user1=profile)
-        if team :
-            pass
-        else :
-            team = Participants.objects.filter(contest=contest, user2=profile)
-            if team :
-                pass
-            else :
-                team = Participants.objects.filter(contest=contest, user3=profile)
-                if team :
-                    pass
-                else :
-                    return Response({"error": "You are not a participant in this contest."}, status=status.HTTP_400_BAD_REQUEST)
+        team = Participants.objects.filter(
+            Q(contest=contest) & 
+            (Q(user1=profile) | Q(user2=profile) | Q(user3=profile))
+        )
 
+        if not team:
+            return Response({"error": "You are not a participant in this contest."}, status=status.HTTP_400_BAD_REQUEST)
+                
         teamData = []
+        teamImageData = []
         team_name = team[0].team_name
         for t in team:
             teamData.append(t.user1.user.username)
+            teamImageData.append(t.user1.image.url)
             if t.user2:
                 teamData.append(t.user2.user.username)
+                teamImageData.append(t.user2.image.url)
             if t.user3:
                 teamData.append(t.user3.user.username)
+                teamImageData.append(t.user3.image.url)
         
         # fetch team details of all other paricipants in the contest
         participants = Participants.objects.filter(contest=contest)
@@ -489,12 +463,15 @@ class ParticipantsView(generics.RetrieveUpdateDestroyAPIView):
                 })
 
         creator = contest.creator.username
+        has_started = contest.start_time is not None
 
         return Response({
             "team_name": team_name,
             "creator": creator,
             "team": teamData,
-            "other_participants": otherParticipantsData
+            "other_participants": otherParticipantsData,
+            "has_started": has_started,
+            "team_image": teamImageData
         }, status=status.HTTP_200_OK)
 
     # def put(self, request, contest_id):
@@ -507,7 +484,7 @@ class ParticipantsView(generics.RetrieveUpdateDestroyAPIView):
 class StandingsView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     def put(self, request, contest_id):
-        user = request.user
+        # user = request.user
         # profile = UserProfile.objects.get(user=user)
         contest = Contests.objects.get(contest_id=contest_id)
         time_of_start = contest.start_time
@@ -517,11 +494,9 @@ class StandingsView(generics.RetrieveUpdateAPIView):
             ud.append(i.problem_link)
         url_list = ud
         problem_data = getprob(url_list)
-        teams = Participants.objects.filter(contest = contest)
-        # add start_time as variable 
+        teams = Participants.objects.filter(contest = contest) 
         ret_obj = []
         for i in teams:
-
             users = [ i.user1.user.username ]
             if(i.user2):
                 users.append(i.user2.user.username)
@@ -542,10 +517,7 @@ class StandingsView(generics.RetrieveUpdateAPIView):
                 if(fact):
                     record.append(1)
                     scored+=1
-
-
                     tim_delta = tim - time_of_start
-
                     minutes = (tim_delta.total_seconds())/60
                     minutes = (int)(minutes)
                     penalty+= (10*ws + minutes)

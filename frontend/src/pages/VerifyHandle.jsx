@@ -51,7 +51,7 @@ const ProblemPage = () => {
   return (
     <div className='verify-container'>
       <h1>Submit a code to this problem which gives verdict "COMPILATION ERROR"</h1>
-      {problem && <a href={problem.problem_url} target="_blank">Problem</a>}
+      {problem && <a href={problem.problem_url} target="_blank">{problem.problem_url}</a>}
       <button onClick={verifySolution} className='verify-button'>Verify Solution</button>
     </div>
   );

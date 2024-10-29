@@ -9,6 +9,26 @@ const Profile = (props) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
 
+  const formatRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+
+    if (years > 0) return `${years} year${years > 1 ? "s" : ""} ago`;
+    if (months > 0) return `${months} month${months > 1 ? "s" : ""} ago`;
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return `${seconds} second${seconds > 1 ? "s" : ""} ago`;
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -72,38 +92,40 @@ const Profile = (props) => {
     <div className="bg-gray-100 p-6 rounded-lg shadow-md">
       <h1 className="text-3xl font-bold text-gray-900">{props.username}</h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        {/* Circular Image Box */}
-        <div className="border border-gray-500 p-4 flex items-center justify-center rounded-full h-64 w-64 mx-auto md:mx-0">
-          <img
-            src={`${import.meta.env.VITE_API_URL}${profileData.image}`}
-            alt="Image"
-            className="object-cover w-half h-half"
-          />
-        </div>
-
-        {/* Conditionally Render Upload Button and Input if the logged-in user is the profile owner */}
-        {isOwner && (
-          <div className="flex flex-col items-center mt-4">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="mb-4"
+        {/* Image Box and Upload Button */}
+        <div className="flex flex-col items-center">
+          <div className="border border-gray-500 p-4 flex items-center justify-center rounded-full h-64 w-64 mx-auto">
+            <img
+              src={`${import.meta.env.VITE_API_URL}${profileData.image}`}
+              alt="Profile Image"
+              className="object-cover h-full w-full rounded-full"
             />
-            <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200 ease-in-out"
-              onClick={handleUpload}
-              disabled={!selectedFile}
-            >
-              Upload Profile Picture
-            </button>
           </div>
-        )}
+
+          {/* Upload Button */}
+          {isOwner && (
+            <div className="flex flex-col items-center mt-4">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="mb-2"
+              />
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200 ease-in-out"
+                onClick={handleUpload}
+                disabled={!selectedFile}
+              >
+                Upload Profile Picture
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Info Section */}
         <div className="md:col-span-2 border border-gray-600 p-6 rounded-lg">
           {[
-            { label: "Joined:", value: profileData.joined },
+            { label: "Joined:", value: formatRelativeTime(profileData.joined) },
             { label: "Wins:", value: profileData.wins },
             { label: "Codeforces_Rating:", value: profileData.rating },
             {

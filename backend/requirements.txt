@@ -9,6 +9,3 @@ sqlparse
 python-dotenv
 mysql-connector-python
 Pillow
-channels
-channels_redis
-daphne

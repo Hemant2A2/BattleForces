@@ -4,7 +4,7 @@ import api from "../api";
 import { jwtDecode } from "jwt-decode";
 import { ACCESS_TOKEN } from "../constants";
 
-const CARD_CLASSES = "bg-card p-4 rounded shadow";
+const CARD_CLASSES = "bg-card p-4 rounded shadow sm:w-1/2";
 const TEXT_HEADING = "text-xl font-semibold mb-2";
 const BUTTON_CLASSES = "px-4 py-2 rounded";
 const SECTION_MARGIN_BOTTOM = "mb-8";
@@ -72,8 +72,6 @@ const StartContestButton = ({ contest_id }) => {
     try {
       const res = await api.post(`/api/contest/problems/${contest_id}`);
       if (res.status === 200) {
-        // hasStarted.current = true;
-        // console.log(hasStarted.current);
         navigate(`/contests/${contest_id}/problems`);
       }
     } catch (error) {
@@ -99,13 +97,14 @@ const StartContestButton = ({ contest_id }) => {
 
 const Participants = () => {
   const contest_id = localStorage.getItem("contest_id");
+  const navigate = useNavigate();
+
   const [team, setTeam] = useState(["User 1", "User 2", "User 3"]);
   const [teamName, setTeamName] = useState("");
   const [otherParticipants, setOtherParticipants] = useState([]);
   const [isCreator, setIsCreator] = useState(false);
   const [teamMate, setTeamMate] = useState("");
-
-  const hasStarted = useRef(false);
+  const [images, setImages] = useState([]);
 
   const token = localStorage.getItem(ACCESS_TOKEN);
   const decoded = jwtDecode(token);
@@ -122,6 +121,11 @@ const Participants = () => {
           setTeam(data.team);
           setTeamName(data.team_name);
           setOtherParticipants(data.other_participants);
+          setImages(data.team_image);
+
+          if(data.has_started) {
+            navigate(`/contests/${contest_id}/problems`);
+          }
         }
       } catch (error) {
         if (error.response) {
@@ -135,17 +139,6 @@ const Participants = () => {
     fetchParticipants();
 
   },[loggedInUser]);
-
-
-  useEffect(() => {
-    const go = () => {
-      const navigate = useNavigate();
-      navigate(`/contests/${contest_id}/problems`);
-    }
-    if (hasStarted.current) {
-      go();
-    }
-  },[hasStarted]);
 
  
   const handleTeamInvite = async (e) => {
@@ -169,6 +162,8 @@ const Participants = () => {
       }
     }
   };
+
+  //console.log(images);
 
   return (
     <div className="bg-background text-foreground p-6 min-h-screen">
@@ -203,7 +198,7 @@ const Participants = () => {
             <img
               aria-hidden="true"
               alt={`${participant} Avatar`}
-              src="/default_user.png"
+              src={`${import.meta.env.VITE_API_URL}${images[index]}`}
             />
             <p className="text-center mt-2">{participant}</p>
           </div>
