@@ -1,5 +1,22 @@
 from django.urls import path
-from .views import *
+from api.views.register import (
+    SubmitHandleView, 
+    GenerateVerificationProblemView, 
+    CreatePasswordView,
+    VerifySolutionView,
+)
+from api.views.contest import (
+    CreateContestView,
+    JoinContestView,
+    JoinContestAsTeamMateView,
+)
+from api.views.profile import UserProfileView
+from api.views.invitation import SendInviteToParticipant, SendInviteToTeamMateView
+from api.views.problems import GenerateContestProblemsView
+from api.views.participants import ParticipantsView
+from api.views.standings import StandingsView
+
+
 
 urlpatterns = [
     path('submit-handle/', SubmitHandleView.as_view(), name='submit_handle'),
