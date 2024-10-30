@@ -7,6 +7,8 @@ import pytz
 import string
 from api.models import Contests, Participants, Problems, Scoreboard, Standings, UserProfile
 from api.helper import getRandomProblemsByRating
+from datetime import timedelta
+from django.utils.timezone import now
 
 
 class GenerateContestProblemsView(generics.CreateAPIView):
@@ -98,9 +100,14 @@ class GenerateContestProblemsView(generics.CreateAPIView):
                 "problem_link": problem.problem_link
             })
 
+        start_time = contest.start_time
+        duration = contest.duration
+        end_time = start_time + timedelta(hours=duration)
+
         return Response({
             "problems": problems,
-            "start_time": contest.start_time,
-            "duration": contest.duration
+            "end_time": int(end_time.timestamp()),
+            "server_current_time": int(now().timestamp())
+
         }, status=status.HTTP_200_OK)
     

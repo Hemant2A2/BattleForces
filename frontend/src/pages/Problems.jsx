@@ -28,7 +28,12 @@ const Problems = () => {
   ];
 
   const [problems, setProblems] = useState(default_problems);
-  const [timeLeft, setTimeLeft] = useState(null);
+  const [timeLeft, setTimeLeft] = useState({
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+  const [remainingTime, setRemainingTime] = useState(null);
 
   useEffect(() => {
     const fetchContestData = async () => {
@@ -36,31 +41,10 @@ const Problems = () => {
       try {
         const res = await api.get(`/api/contest/problems/${contest_id}`);
         if (res.status === 200) {
-          const { problems, start_time, duration } = res.data;
-          setProblems(problems);
-
-          const endTime = new Date(
-            new Date(start_time).getTime() + duration * 3600 * 1000
-          );
-
-          const updateCountdown = () => {
-            const now = new Date();
-            const difference = endTime - now;
-
-            if (difference > 0) {
-              const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-              const minutes = Math.floor((difference / (1000 * 60)) % 60);
-              const seconds = Math.floor((difference / 1000) % 60);
-              setTimeLeft({ hours, minutes, seconds });
-            } else {
-              setTimeLeft(null);
-            }
-          };
-
-          updateCountdown();
-          const timerId = setInterval(updateCountdown, 1000);
-
-          return () => clearInterval(timerId);
+          const data = res.data;
+          setProblems(data.problems);
+          const initialRemainingTime = data.end_time - data.server_current_time;
+          setRemainingTime(initialRemainingTime);
         }
       } catch (error) {
         if (error.response) {
@@ -76,6 +60,31 @@ const Problems = () => {
 
     fetchContestData();
   }, []);
+
+  useEffect(() => {
+    if (remainingTime === null) return; 
+
+    const timerInterval = setInterval(() => {
+      setRemainingTime((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timerInterval);
+  }, [remainingTime]);
+
+  useEffect(() => {
+    if (remainingTime !== null) {
+      const hours = Math.floor(remainingTime / 3600);
+      const minutes = Math.floor((remainingTime % 3600) / 60);
+      const seconds = remainingTime % 60;
+      setTimeLeft({ hours, minutes, seconds });
+    }
+  }, [remainingTime]);
 
   return (
     <div className="text-foreground p-6 rounded-lg shadow-md">
