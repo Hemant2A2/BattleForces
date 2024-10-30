@@ -89,7 +89,7 @@ const Problems = () => {
   return (
     <div className="text-foreground p-6 rounded-lg shadow-md">
       <ContestNavbar />
-      {timeLeft ? (
+      {timeLeft && remainingTime ? (
         <div className="bg-gray-100 text-center p-4 rounded-lg shadow-md">
           <h2 className="text-xl font-bold mb-2">Time Left</h2>
           <div className="text-lg font-mono">

@@ -5,15 +5,9 @@ import api from '../api';
 const commonBorderClasses = 'border border-border px-4 py-2';
 
 const Standings = () => {
-  // const standingsData = [
-  //   { rank: 1, teamName: 'Team Alpha', solveCount: 4, penalty: 10, solutions: ['✅', '✅', '❌', '✅'] },
-  //   { rank: 2, teamName: 'Team Beta', solveCount: 3, penalty: 15, solutions: ['✅', '✅', '✅', '❌'] },
-  // ];
-
   const [standingsData, setStandingsData] = useState([]);
-  const [columns, setColumns] = useState( ['Team Name', 'Solve Count', 'Penalty']);
+  const [columns, setColumns] = useState( ['Rank','Team Name', 'Solve Count', 'Penalty']);
   const contest_id = localStorage.getItem('contest_id');
-  //const contest_id = 86;
 
   useEffect(() => {
     const fetchStandings = async () => {
@@ -24,12 +18,11 @@ const Standings = () => {
         let sols = res.data[0].solutions;
         
         let size = sols.length;
-        let temp = ['Team Name', 'Solve Count', 'Penalty']
+        let temp = ['Rank','Team Name', 'Solve Count', 'Penalty']
         for (let i = 0; i < size; i++) {
           temp.push(String.fromCharCode(65 + i));
         }
         setColumns(temp);
-        console.log(temp);
       } catch (error) {
         console.error(error);
       }
@@ -53,7 +46,7 @@ const Standings = () => {
         </thead>
         <tbody>
           {standingsData.map((row, index) => (
-            <StandingsRow key={index} row={row} />
+            <StandingsRow rank={index + 1} row={row} />
           ))}
         </tbody>
       </table>
@@ -61,10 +54,10 @@ const Standings = () => {
   );
 };
 
-const StandingsRow = ({ row }) => {
+const StandingsRow = ({ row, rank }) => {
   return (
     <tr className="bg-card-foreground">
-      {/* <td className={commonBorderClasses}>{row.rank}</td> */}
+      <td className={commonBorderClasses}>{rank}</td>
       <td className={commonBorderClasses}>{row.team_name}</td>
       <td className={commonBorderClasses}>{row.solve_count}</td>
       <td className={commonBorderClasses}>{row.penalty}</td>
