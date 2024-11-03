@@ -28,16 +28,82 @@ const ContestItem = ({ contestName }) => (
   </li>
 );
 
-const PublicContests = () => (
-  <div className="bg-gray-200 w-full md:w-1/2 bg-muted rounded-lg p-6 space-y-4">
-    <h2 className="text-xl font-bold text-primary">Public Contests</h2>
-    <ul className="space-y-2">
-      {PUBLIC_CONTESTS.map((contest, index) => (
-        <ContestItem key={index} contestName={`${index + 1}) ${contest}`} />
-      ))}
-    </ul>
-  </div>
-);
+const PublicContests = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const contestsPerPage = 5;
+
+  const totalPages = Math.ceil(PUBLIC_CONTESTS.length / contestsPerPage);
+  const startIndex = (currentPage - 1) * contestsPerPage;
+  const currentContests = PUBLIC_CONTESTS.slice(
+    startIndex,
+    startIndex + contestsPerPage
+  );
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handlePageInput = (e) => {
+    const page = parseInt(e.target.value, 10);
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  return (
+    <div className="bg-gray-200 w-full md:w-1/2 bg-muted rounded-lg p-6 space-y-4">
+      <h2 className="text-xl font-bold text-primary">Public Contests</h2>
+      <ul className="space-y-2">
+        {currentContests.map((contest, index) => (
+          <ContestItem key={index} contestName={`${startIndex + index + 1}) ${contest}`} />
+        ))}
+      </ul>
+      <div className="flex justify-between items-center pt-4 space-x-2">
+        <button
+          onClick={handlePrevPage}
+          disabled={currentPage === 1}
+          className={`bg-gray-500 text-white ${BUTTON_CLASSES} ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
+        >
+          Previous
+        </button>
+        
+        <span className="text-primary font-medium">
+          Page {currentPage} of {totalPages}
+        </span>
+
+        <button
+          onClick={handleNextPage}
+          disabled={currentPage === totalPages}
+          className={`bg-gray-500 text-white ${BUTTON_CLASSES} ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
+        >
+          Next
+        </button>
+      </div>
+      <div className="flex justify-center items-center space-x-2 pt-4">
+        <label htmlFor="page-number" className="text-sm font-medium text-primary">
+          Go to Page:
+        </label>
+        <input
+          id="page-number"
+          type="number"
+          min="1"
+          max={totalPages}
+          value={currentPage}
+          onChange={handlePageInput}
+          className="border border-gray-400 rounded p-1 w-16 text-center"
+        />
+      </div>
+    </div>
+  );
+};
 
 const PrivateContests = () => {
   const [roomId, setRoomId] = useState("");

@@ -34,7 +34,7 @@ const RecentContests = () => {
         Recent Contests:
       </h2>
       <ul className="list-disc pl-6 space-y-2">
-        {["Contest 1", "Contest 2", "Contest 3", "...."].map((contest) => (
+        {["Contest 1", "Contest 2", "Contest 3"].map((contest) => (
           <li
             key={contest}
             className="text-gray-700 hover:text-blue-600 transition duration-200 ease-in-out cursor-pointer"
@@ -54,15 +54,20 @@ const FindUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.get(`/api/view-profile/${searchUser}`);
+      const res = await api.get(`/api/view-profile/${searchUser}/`);
       if (res.status === 200) {
         navigate(`/userProfile/${searchUser}`);
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       }
       else {
+        alert('User not found');
         navigate('/');
       }
     } catch (error) {
       navigate('/');
+      console.log(error);
       if (error.response) {
         alert(error.response.data.error || 'something went wrong(in profile if)');
     } else {

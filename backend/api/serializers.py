@@ -11,7 +11,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
     
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
-    def validate(self, attrs):
+    def refresh_token(self, attrs):
         data = super().validate(attrs)
         token = RefreshToken(data['refresh'])
         data['access'] = str(token.access_token)
